@@ -2,7 +2,6 @@ library(shiny)
 library(leaflet)
 library(geosphere)
 
-
 #---
 # UI
 #---
@@ -17,24 +16,29 @@ ui <- fluidPage(
       wellPanel(
         fileInput("uploadData", "Upload Cruise Track", accept = c(".csv", ".tsv")),
         textInput("cruiseStartTime", "Cruise Start Time (UTC):", value = format(Sys.time(), "%Y-%m-%dT%H:%M", tz = "UTC")),
-        selectInput("Station", "Select Station:", choices = NULL), 
-        p("Select `--` to add a new station to the uploaded cruise track.")
+        selectInput("timeZoneOffset", "Time Zone for Local Time (hours):", choices = seq(-12,14, by=1), selected = 0),
+        p("Add a new station or select an existing to edit its fields"),
+        selectInput("Station", "Select Station:", choices = NULL)
         ),
       
       # Other input elements in another box
       wellPanel(
-        textInput("stationName", "Edit Name:", ""), 
-        numericInput("Latitude", "Latitude (ºN):", value = 0, min = -90, max = 90),
-        numericInput("Longitude", "Longitude (ºE):", value = 0, min = -180, max = 180),
+        p("Editable fields"),
+        textInput("stationName", "Station Name:", ""), 
+        numericInput("Latitude", "Latitude (decimal ºN):", value = 0, min = -90, max = 90),
+        numericInput("Longitude", "Longitude (decimal ºE):", value = 0, min = -180, max = 180),
         textInput("Operations", "Operations:", ""),
-        numericInput("ShipSpeed", "Ship Speed (knots):", value = 10, min = 0),
-        numericInput("TimeOnStation", "Time on Station (hours):", value = 24, min = 0),
+        numericInput("ShipSpeed", "Ship Speed (knots):", value = 12, min = 0),
+        numericInput("TimeOnStation", "Time on Station (hours):", value = 12, min = 0),
+        p("Choose where to insert the new station in the cruise track (default is at the end)"),
         selectInput("addAfterStation", "Add After Station:", choices = NULL), 
+        p("Click the button to save the station"),
         actionButton("addStation", "Save Station")
         ),
       
       # Cruise start date and time input in a separate box
       wellPanel(
+        p("Download the cruise track as a CSV file"),
         downloadButton("downloadTable", "Download Table") 
       ),
       
@@ -71,7 +75,7 @@ server <- function(input, output, session) {
       if (!is.na(lastStationNumber)) {
         newStation <- paste("Station", lastStationNumber + 1)
       } else {
-        newStation <- "--" # Default to Station 1 if the last station name is not in the expected format
+        newStation <- "Add a new station" 
       }
     } else {
       newStation <- "Station 1" # Default to Station 1 if there are no stations yet
@@ -87,7 +91,12 @@ server <- function(input, output, session) {
     selectedStation <- input$Station
     
     # Update stationName textInput (for both existing and new stations)
-    updateTextInput(session, "stationName", value = selectedStation) 
+    if(selectedStation == "Add a new station"){
+      newStation <- "New Station"
+      updateTextInput(session, "stationName", value = newStation) 
+    } else {
+      updateTextInput(session, "stationName", value = selectedStation) 
+    }
     
     if (!is.null(selectedStation) && selectedStation %in% stationData$name) {
       stationIndex <- which(stationData$name == selectedStation)
@@ -171,12 +180,8 @@ server <- function(input, output, session) {
   
   arrivalTimes <- reactive({
     if (length(stationData$lat) > 1) {
-      # Combine date and time input for cruise start
-      cruiseStartDateTime <- as.POSIXct(paste(input$cruiseStartDate, input$cruiseStartTime), 
-                                        format = "%Y-%m-%dT%H:%M")
-      
       # Initialize arrival time with the cruise start time
-      arrivalTimes <- c(cruiseStartDateTime) 
+      arrivalTimes <- as.POSIXct(input$cruiseStartTime, format = "%Y-%m-%dT%H:%M")
       
       # Calculate arrival times relative to cruise start
       if (length(stationData$time) > 1) {
@@ -204,12 +209,8 @@ server <- function(input, output, session) {
   # Create a reactive expression to hold the table data
   tableData <- reactive({
     if (length(stationData$name) > 0) {
-      # Combine date and time input for cruise start
-      cruiseStartDateTime <- as.POSIXct(paste(input$cruiseStartDate, input$cruiseStartTime), 
-                                        format = "%Y-%m-%dT%H:%M")
-      
       # Calculate arrival and departure times for the first station
-      firstStationArrival <- cruiseStartDateTime 
+      firstStationArrival <- as.POSIXct(input$cruiseStartTime, format = "%Y-%m-%dT%H:%M") 
       firstStationDeparture <- firstStationArrival + stationData$time[1] * 60
       
       # Create a data frame with initial values for the first station
@@ -219,8 +220,8 @@ server <- function(input, output, session) {
         Longitude = stationData$lon,
         ShipSpeed = stationData$speed,
         TimeOnStation = stationData$time,
-        Arrival = c(format(firstStationArrival, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station arrival
-        Departure = c(format(firstStationDeparture, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station departure
+        ArrivalUTC = c(format(firstStationArrival, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station arrival
+        DepartureUTC = c(format(firstStationDeparture, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station departure
         Distance = 0,
         TravelTime = 0,
         Operations = stationData$operations
@@ -228,11 +229,19 @@ server <- function(input, output, session) {
       
       # Add data for subsequent stations if they exist
       if (length(stationData$name) > 1) {
-        df$Arrival[-1] <- format(arrivalTimes()[-1], "%Y-%m-%dT%H:%M")
-        df$Departure[-1] <- format(departureTimes()[-1], "%Y-%m-%dT%H:%M")
+        df$ArrivalUTC[-1] <- format(arrivalTimes()[-1], "%Y-%m-%dT%H:%M")
+        df$DepartureUTC[-1] <- format(departureTimes()[-1], "%Y-%m-%dT%H:%M")
         df$Distance[-1] <- distances()
         df$TravelTime[-1] <- travelTimes()
       }
+      
+      # Ensure df$ArrivalUTC and df$DepartureUTC are POSIXct objects with UTC timezone
+      df$ArrivalUTC <- as.POSIXct(df$ArrivalUTC, format = "%Y-%m-%dT%H:%M", tz = "UTC")
+      df$DepartureUTC <- as.POSIXct(df$DepartureUTC, format = "%Y-%m-%dT%H:%M", tz = "UTC")
+      
+      # Calculate local arrival and departure times (make it reactive to timeZoneOffset)
+      df$ArrivalLocal <- format(df$ArrivalUTC, tz = paste0("Etc/GMT", input$timeZoneOffset))
+      df$DepartureLocal <- format(df$DepartureUTC, tz = paste0("Etc/GMT", input$timeZoneOffset))
       
       df
     }
@@ -242,12 +251,8 @@ server <- function(input, output, session) {
   # Create the table
   output$stationTable <- renderTable({
     if (length(stationData$name) > 0) {
-      # Combine date and time input for cruise start
-      cruiseStartDateTime <- as.POSIXct(paste(input$cruiseStartDate, input$cruiseStartTime), 
-                                        format = "%Y-%m-%dT%H:%M")
-      
       # Calculate arrival and departure times for the first station
-      firstStationArrival <- cruiseStartDateTime 
+      firstStationArrival <- as.POSIXct(input$cruiseStartTime, format = "%Y-%m-%dT%H:%M") 
       firstStationDeparture <- firstStationArrival + stationData$time[1] * 60
       
       # Create a data frame with initial values for the first station
@@ -255,8 +260,8 @@ server <- function(input, output, session) {
         Station = stationData$name,
         Latitude = stationData$lat,
         Longitude = stationData$lon,
-        Arrival = c(format(firstStationArrival, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station arrival
-        Departure = c(format(firstStationDeparture, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station departure
+        ArrivalUTC = c(format(firstStationArrival, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station arrival
+        DepartureUTC = c(format(firstStationDeparture, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station departure
         Distance = 0,
         TravelTime = 0,
         Operations = stationData$Operations
@@ -264,10 +269,10 @@ server <- function(input, output, session) {
       
       # Add data for subsequent stations if they exist
       if (length(stationData$name) > 1) {
-        df$Arrival[-1] <- sapply(arrivalTimes(), function(x) {
+        df$ArrivalUTC[-1] <- sapply(arrivalTimes(), function(x) {
           format(as.POSIXct("1970-01-01 00:00", tz = "UTC") + x * 60, "%Y-%m-%dT%H:%M")
         })
-        df$Departure[-1] <- sapply(departureTimes(), function(x) {
+        df$DepartureUTC[-1] <- sapply(departureTimes(), function(x) {
           format(as.POSIXct("1970-01-01 00:00", tz = "UTC") + x * 60, "%Y-%m-%dT%H:%M")
         })
         df$Distance[-1] <- distances()
@@ -297,12 +302,10 @@ server <- function(input, output, session) {
         invalidateLater(0, session) 
         
         # Update cruise start date and time from the uploaded table
-        if ("Arrival" %in% names(df) && !is.na(df$Arrival[1])) {
-          arrivalTime <- as.POSIXct(df$Arrival[1], format = "%Y-%m-%dT%H:%M", tz = "UTC")
+        if ("ArrivalUTC" %in% names(df) && !is.na(df$ArrivalUTC[1])) {
+          arrivalTime <- as.POSIXct(df$ArrivalUTC[1], format = "%Y-%m-%dT%H:%M", tz = "UTC")
           updateTextInput(session, "cruiseStartTime", value = format(arrivalTime, "%Y-%m-%dT%H:%M"))
         }
-        
-
 
       },
       error = function(e) {
@@ -373,11 +376,8 @@ server <- function(input, output, session) {
   # Calculate arrival times taking departure times into account
   arrivalTimes <- reactive({
     if (length(stationData$lat) > 1) {
-      cruiseStartDateTime <- as.POSIXct(paste(input$cruiseStartDate, input$cruiseStartTime), 
-                                        format = "%Y-%m-%dT%H:%M")
-      
       # Initialize arrival time with the cruise start time
-      arrivalTimes <- c(cruiseStartDateTime) 
+      arrivalTimes <- as.POSIXct(input$cruiseStartTime, format = "%Y-%m-%dT%H:%M", tz = "UTC")
       
       # Calculate arrival times for subsequent stations
       if (length(stationData$time) > 1) {
@@ -405,12 +405,8 @@ server <- function(input, output, session) {
   # Create a reactive expression to hold the table data
   tableData <- reactive({
     if (length(stationData$name) > 0) {
-      # Combine date and time input for cruise start
-      cruiseStartDateTime <- as.POSIXct(paste(input$cruiseStartDate, input$cruiseStartTime), 
-                                        format = "%Y-%m-%dT%H:%M")
-      
       # Calculate arrival and departure times for the first station
-      firstStationArrival <- cruiseStartDateTime 
+      firstStationArrival <- as.POSIXct(input$cruiseStartTime, format = "%Y-%m-%dT%H:%M")
       firstStationDeparture <- firstStationArrival + stationData$time[1] * 60
       
       # Create a data frame with initial values for the first station
@@ -420,8 +416,8 @@ server <- function(input, output, session) {
         Longitude = stationData$lon,
         ShipSpeed = stationData$speed,
         TimeOnStation = stationData$time,
-        Arrival = c(format(firstStationArrival, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station arrival
-        Departure = c(format(firstStationDeparture, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station departure
+        ArrivalUTC = c(format(firstStationArrival, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station arrival
+        DepartureUTC = c(format(firstStationDeparture, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), # Set first station departure
         Distance = 0,
         TravelTime = 0,
         Operations = stationData$Operations
@@ -429,13 +425,26 @@ server <- function(input, output, session) {
       
       # Add data for subsequent stations if they exist
       if (length(stationData$name) > 1) {
-        df$Arrival[-1] <- format(arrivalTimes()[-1], "%Y-%m-%dT%H:%M")
-        df$Departure[-1] <- format(departureTimes()[-1], "%Y-%m-%dT%H:%M")
+        df$ArrivalUTC[-1] <- format(arrivalTimes()[-1], "%Y-%m-%dT%H:%M")
+        df$DepartureUTC[-1] <- format(departureTimes()[-1], "%Y-%m-%dT%H:%M")
         df$Distance[-1] <- distances()
         df$TravelTime[-1] <- travelTimes()
       }
       
+      # Ensure df$ArrivalUTC and df$DepartureUTC are POSIXct objects with UTC timezone
+      df$ArrivalUTC <- as.POSIXct(df$ArrivalUTC, format = "%Y-%m-%dT%H:%M", tz = "UTC")
+      df$DepartureUTC <- as.POSIXct(df$DepartureUTC, format = "%Y-%m-%dT%H:%M", tz = "UTC")
+      
+      # Calculate local arrival and departure times (make it reactive to timeZoneOffset)
+      df$ArrivalLocal <- format(df$ArrivalUTC, format = "%Y-%m-%dT%H:%M",tz = paste0("Etc/GMT", input$timeZoneOffset))
+      df$DepartureLocal <- format(df$DepartureUTC, format = "%Y-%m-%dT%H:%M", tz = paste0("Etc/GMT", input$timeZoneOffset))
+      
+      # Convert ArrivalUTC and DepartureUTC to correct formating
+      df$ArrivalUTC <- format(df$ArrivalUTC, format = "%Y-%m-%dT%H:%M", tz = "UTC")
+      df$DepartureUTC <- format(df$DepartureUTC, format = "%Y-%m-%dT%H:%M", tz = "UTC")
+      
       df
+     
     }
   })
   
