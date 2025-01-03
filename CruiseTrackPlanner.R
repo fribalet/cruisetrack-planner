@@ -15,9 +15,10 @@ ui <- fluidPage(
     sidebarPanel(
       # Cruise start date and time input in a separate box
       wellPanel(
-        fileInput("uploadData", "Upload Table", accept = c(".csv", ".tsv")),
+        fileInput("uploadData", "Upload Cruise Track", accept = c(".csv", ".tsv")),
         textInput("cruiseStartTime", "Cruise Start Time (UTC):", value = format(Sys.time(), "%Y-%m-%dT%H:%M", tz = "UTC")),
         selectInput("Station", "Select Station:", choices = NULL), 
+        p("Select `Station NA` to add a new station to the uploaded cruise track.")
         ),
       
       # Other input elements in another box

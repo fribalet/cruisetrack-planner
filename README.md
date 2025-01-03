@@ -13,7 +13,7 @@ This Shiny app provides a user-friendly interface for planning cruise tracks, al
     - Popups on markers show station details.
 - **Manage Cruise Schedule:**
     - Table displays the cruise schedule with arrival and departure times for each station, calculated based on ship speed and time on station.
-    - Set the cruise start date and time.
+    - Set the cruise start date and time (defaults to current UTC time).
 - **Upload/Download Data:**
     - Upload a CSV or TSV file to populate the app with station data.
     - Download the current cruise track data as a CSV file.
@@ -21,21 +21,23 @@ This Shiny app provides a user-friendly interface for planning cruise tracks, al
 ## Usage
 
 1. **Launch the App:** Run the `CruiseTrackPlanner.R` script in R or RStudio to launch the Shiny app.
-2. **Set Cruise Start:** Enter the cruise start date and time in UTC.
-3. **Add Stations:**
-    - Select a station name from the dropdown or enter a new one (Station NA).
-    - Fill in the details for the station (name, latitude, longitude, ship speed, time on station, etc ...).
-    - Choose where to add the station in the cruise track using the "Add After Station" dropdown.
-    - Click "Save Station" to save the station.
-4. **Edit Stations:**
-    - Select an existing station from the "Select Station" dropdown.
-    - Modify the station details as needed.
-    - Click "Save Station" to save the changes.
-5. **Upload Data:**
-    - Click "Browse" to select a CSV or TSV file containing station data.
-    - The app will automatically populate the map and table with the uploaded data.
+2. **Upload Data (Optional):** 
+    - Click "Browse" to select a CSV or TSV file containing station data. 
+    - The app will populate the map, table, and input fields with the uploaded data. The cruise start time will be set to the arrival time of the first station in the file.
+3. **Set Cruise Start (If not uploaded):** Enter the cruise start date and time in UTC in the provided field.
+4. **Select Station:** Select a station from the dropdown menu to view and edit its information. Select `Station NA` to add a new station to the uploaded cruise track..
+
+4. **Edit Station information**
+  - Edit name: This field displays the name of the selected station. You can edit this field to change the station name.
+  - Latitude (ºN): Enter the latitude of the station in degrees North.
+  - Longitude (ºE): Enter the longitude of the station in degrees West.
+  - Operations: Enter a description of the operations to be conducted at this station (e.g., "CTD cast at 1000 m","Zooplankton tow at 200 m","Shipek at 1000 m").
+  - Ship Speed (knots): Enter the planned ship speed in knots for traveling to this station. This will be used to calculate the travel time between stations.
+  - Time on Station (hours): Enter the planned time (in hours) that the ship will spend at this station.
+  - Add After Station: This dropdown menu lets you choose after which existing station you want to add the new station. Select "End" to add the station at the end of the cruise track.
+  - Click "Save Station" to save the station information.
 6. **Download Data:**
-    - Click "Download Table" to download the current cruise track data as a CSV file.
+  - Click "Download Table" to download the current cruise track data as a CSV file.
 
 ## File Structure
 
@@ -56,6 +58,7 @@ This Shiny app provides a user-friendly interface for planning cruise tracks, al
 
 ## Future Enhancements
 
+- Add local time conversion for the cruise schedule.
 - Add functionality to delete stations.
 - Implement more advanced map features (e.g., custom basemaps, layers).
 - Improve error handling and validation.
