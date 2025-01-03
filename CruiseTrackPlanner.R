@@ -18,7 +18,7 @@ ui <- fluidPage(
         fileInput("uploadData", "Upload Cruise Track", accept = c(".csv", ".tsv")),
         textInput("cruiseStartTime", "Cruise Start Time (UTC):", value = format(Sys.time(), "%Y-%m-%dT%H:%M", tz = "UTC")),
         selectInput("Station", "Select Station:", choices = NULL), 
-        p("Select `Station NA` to add a new station to the uploaded cruise track.")
+        p("Select `--` to add a new station to the uploaded cruise track.")
         ),
       
       # Other input elements in another box
@@ -64,8 +64,19 @@ server <- function(input, output, session) {
   
   # Update choices for "Station Name" and "Add After Station" dropdowns
   observe({
-    newStation <- ifelse(is.null(stationData$name), "Station 1", 
-                             paste("Station", as.numeric(gsub("Station ", "", tail(stationData$name, 1))) + 1))
+    # Check if stationData$name is not NULL and not empty
+    if (!is.null(stationData$name) && length(stationData$name) > 0) {
+      lastStationNumber <- as.numeric(gsub("Station ", "", tail(stationData$name, 1)))
+      # Check if the last station number is a valid number
+      if (!is.na(lastStationNumber)) {
+        newStation <- paste("Station", lastStationNumber + 1)
+      } else {
+        newStation <- "--" # Default to Station 1 if the last station name is not in the expected format
+      }
+    } else {
+      newStation <- "Station 1" # Default to Station 1 if there are no stations yet
+    }
+    
     updateSelectInput(session, "Station", choices = c(newStation, stationData$name))
     updateSelectInput(session, "addAfterStation", choices = c("End", stationData$name))
   })

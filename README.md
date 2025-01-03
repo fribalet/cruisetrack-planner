@@ -25,7 +25,7 @@ This Shiny app provides a user-friendly interface for planning cruise tracks, al
   - Click "Browse" to select a CSV or TSV file containing station data. 
   - The app will populate the map, table, and input fields with the uploaded data. The cruise start time will be set to the arrival time of the first station in the file.
 3. **Set Cruise Start (If not uploaded):** Enter the cruise start date and time in UTC in the provided field.
-4. **Select Station:** Select a station from the dropdown menu to view and edit its information. Select `Station NA` to add a new station to the uploaded cruise track..
+4. **Select Station:** Select a station from the dropdown menu to view and edit its information. Select `--` to add a new station to the uploaded cruise track.
 5. **Edit Station information**
   - `Edit name`: This field displays the name of the selected station. You can edit this field to change the station name.
   - `Latitude (ºN)`: Enter the latitude of the station in degrees North.
