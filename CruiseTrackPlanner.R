@@ -27,7 +27,8 @@ ui <- fluidPage(
   
   # Application title
   titlePanel("Cruise Track Planner"),
-  p("For detailed instructions on how to use this app, please refer to the README file."),
+  p("For detailed instructions on how to use this app, please refer to the ", 
+    a("README.md", href = "https://github.com/fribalet/cruisetrack-planner"), "file."),
   
   sidebarLayout(
     sidebarPanel(
@@ -41,7 +42,7 @@ ui <- fluidPage(
       # Set start date and time zone input
       wellPanel(
         p("Edit Time Information",style = "font-size: 16px; font-weight: bold; color: #33c1ff;"),
-        p("If you did not upload a cruise track, enter the cruise start date and time in the format `%Y-%m-%dT%H:%M`"),
+        p("If you did not upload a cruise track, enter the cruise start date and time in the format `YYYY-MM-DDTHH:MM`"),
         textInput("cruiseStartTime", "Cruise Start Time (UTC):", value = format(Sys.time(), "%Y-%m-%dT%H:%M", tz = "UTC")),
         p("Select the time zone for local time"),
         selectInput("timeZoneOffset", "Time Zone (hours):", choices = timezone_sequence, selected = timezone_offset)
