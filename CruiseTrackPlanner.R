@@ -1,6 +1,7 @@
 library(shiny)
 library(leaflet)
 library(geosphere)
+library(DT)
 
 # Get the current time in the current timezone
 local_time <- as.POSIXlt(Sys.time(), tz = Sys.timezone())
@@ -64,7 +65,7 @@ ui <- fluidPage(
     
     mainPanel(
       leafletOutput("map"),
-      tableOutput("stationTable")
+      DT::dataTableOutput("stationTable") 
     )
   ),
   
@@ -77,6 +78,7 @@ ui <- fluidPage(
     )
   )
 )
+
 
 #-------
 # SERVER
@@ -236,6 +238,8 @@ server <- function(input, output, session) {
         TimeOnStation = stationData$time,
         ArrivalUTC = c(format(firstStationArrival, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), 
         DepartureUTC = c(format(firstStationDeparture, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)), 
+        ArrivalLocal = c(format(firstStationArrival, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)),
+        DepartureLocal = c(format(firstStationDeparture, "%Y-%m-%dT%H:%M"), rep("", length(stationData$name) - 1)),
         Distance = 0,
         TravelTime = 0,
         Operations = stationData$Operations
@@ -245,15 +249,15 @@ server <- function(input, output, session) {
       if (length(stationData$name) > 1) {
         df$ArrivalUTC[-1] <- format(arrivalTimes()[-1], "%Y-%m-%dT%H:%M")
         df$DepartureUTC[-1] <- format(departureTimes()[-1], "%Y-%m-%dT%H:%M")
-        df$Distance[-1] <- distances()
-        df$TravelTime[-1] <- travelTimes()
+        df$Distance[-1] <- round(distances())
+        df$TravelTime[-1] <- round(travelTimes()/60, 1) # time in hours
       }
       
       # Ensure UTC timezone and correct formatting
       df$ArrivalUTC <- as.POSIXct(df$ArrivalUTC, format = "%Y-%m-%dT%H:%M", tz = "UTC")
       df$DepartureUTC <- as.POSIXct(df$DepartureUTC, format = "%Y-%m-%dT%H:%M", tz = "UTC")
       
-      # Calculate local arrival and departure times
+      # Add local arrival and departure times
       df$ArrivalLocal <- format(df$ArrivalUTC, format = "%Y-%m-%dT%H:%M",tz = paste0("Etc/GMT", input$timeZoneOffset))
       df$DepartureLocal <- format(df$DepartureUTC, format = "%Y-%m-%dT%H:%M", tz = paste0("Etc/GMT", input$timeZoneOffset))
       
@@ -266,8 +270,29 @@ server <- function(input, output, session) {
   })
   
   # Render the table 
-  output$stationTable <- renderTable({
-    tableData()
+  # output$stationTable <- renderTable({
+  #   tableData()
+  # })
+
+  output$stationTable <- DT::renderDataTable({
+        DT::datatable(tableData(),
+                  options = list(
+                    pageLength = 15, # Number of rows per page
+                    autoWidth = TRUE, # Automatically adjust the width
+                    scrollX = TRUE,
+                    lengthMenu = c(15, 30, 50, 100), # Options for rows per page
+                    searching = TRUE, # Enable searching
+                    ordering = TRUE,  # Enable sorting
+                    columnDefs = list(
+                      list(
+                        width = '120px',     # Set a default width (adjust as needed)
+                        targets = c(6:9)),   # Apply to TimeDate columns
+                      list(
+                        width = '700px',     # Set a default width (adjust as needed)
+                        targets = 12,    # Apply to all columns
+                        whiteSpace = 'nowrap') # Prevent line breaks
+                      ) 
+                  ))
   })
   
   # Upload the table and update data
