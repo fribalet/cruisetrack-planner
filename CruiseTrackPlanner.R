@@ -20,7 +20,6 @@ tz_sequence <- seq(-12, 14, by = 1)
 timezone_sequence <- ifelse(tz_sequence > 0, paste0("+", tz_sequence), tz_sequence)
 
 
-
 #---
 # UI
 #---
@@ -28,39 +27,53 @@ ui <- fluidPage(
   
   # Application title
   titlePanel("Cruise Track Planner"),
+  p("For detailed instructions on how to use this app, please refer to the README file."),
   
   sidebarLayout(
     sidebarPanel(
-      # Cruise start date and time input
+      # Upload Crusie track
       wellPanel(
-        fileInput("uploadData", "Upload Cruise Track (Optional)", accept = c(".csv", ".tsv")),
+        p("Upload Cruise Track (Optional)",style = "font-size: 16px; font-weight: bold; color: #33c1ff;"),
+        fileInput("uploadData", "Upload .csv or .tsv file", accept = c(".csv", ".tsv")),
+        p("Must contain columns `StationName`, `Latitude`, `Longitude`, `ShipSpeed`, `TimeOnStation` and `Operations`.")
+       ),
+      
+      # Set start date and time zone input
+      wellPanel(
+        p("Edit Time Information",style = "font-size: 16px; font-weight: bold; color: #33c1ff;"),
+        p("If you did not upload a cruise track, enter the cruise start date and time in the format `%Y-%m-%dT%H:%M`"),
         textInput("cruiseStartTime", "Cruise Start Time (UTC):", value = format(Sys.time(), "%Y-%m-%dT%H:%M", tz = "UTC")),
-        selectInput("timeZoneOffset", "Time Zone for Local Time (hours):", choices = timezone_sequence, selected = timezone_offset)
+        p("Select the time zone for local time"),
+        selectInput("timeZoneOffset", "Time Zone (hours):", choices = timezone_sequence, selected = timezone_offset)
+      ),
+      
+      # Add a new station (Optional)
+      wellPanel(
+        p("Create a New Station (Optional)",style = "font-size: 16px; font-weight: bold; color: #33c1ff;"),
+        textInput("newStationName", "New Station Name:", ""),
+        selectInput("addAfterStation", "Add After Station:", choices = NULL),
+        p("Choose where to insert the new station in the cruise track (default is at the end)")
       ),
       
       # Station input and editing elements
       wellPanel(
-        p("Add a new station or select an existing to edit its fields"),
+        p("Edit Station Field Information", style = "font-size: 16px; font-weight: bold; color: #33c1ff;"),
         selectInput("Station", "Select Station:", choices = NULL),
-        p("Editable fields"),
-        textInput("stationName", "Station Name:", ""), 
+        textInput("stationName", "Edit Station Name:", ""), 
         numericInput("Latitude", "Latitude (decimal ºN):", value = 0, min = -90, max = 90),
         numericInput("Longitude", "Longitude (decimal ºE):", value = 0, min = -180, max = 180),
         textInput("Operations", "Operations:", ""),
         numericInput("ShipSpeed", "Ship Speed (knots):", value = 12, min = 0),
         numericInput("TimeOnStation", "Time on Station (hours):", value = 12, min = 0),
-        p("Choose where to insert the new station in the cruise track (default is at the end)"),
-        selectInput("addAfterStation", "Add After Station:", choices = NULL),
-        p("Click the button to save the station"),
+        p("Click to save the station field information"),
         actionButton("addStation", "Save Station")
       ),
       
       # Download button
       wellPanel(
-        p("Download the cruise track as a CSV file"),
-        downloadButton("downloadTable", "Download Table") 
+        p("Download the Cruise Track Table",style = "font-size: 16px; font-weight: bold; color: #33c1ff;"),
+        downloadButton("downloadTable", "Download .csv file") 
       )
-      
     ),
     
     mainPanel(
@@ -95,31 +108,39 @@ server <- function(input, output, session) {
     Operations = NULL
   )
   
-  # Update choices for "Station Name" and "Add After Station" dropdowns
+  # Update choices for "Station Name"
   observe({
     # Determine the new station name
-    if (!is.null(stationData$name) && length(stationData$name) > 0) {
+    newStation <- if (is.null(stationData$name) || length(stationData$name) == 0) {
+      "Station 1" # Default to Station 1 if no stations
+    } else {
       lastStationNumber <- suppressWarnings(as.numeric(gsub("Station ", "", tail(stationData$name, 1))))
       if (!is.na(lastStationNumber)) {
-        newStation <- paste("Station", lastStationNumber + 1)
+        paste("Station", lastStationNumber + 1)
       } else {
-        newStation <- "Add a new station" 
+        "Station 1" 
       }
-    } else {
-      newStation <- "Station 1" # Default to Station 1 if no stations
     }
     
     updateSelectInput(session, "Station", choices = c(newStation, stationData$name))
+    updateTextInput(session, "newStationName", value = newStation)
     updateSelectInput(session, "addAfterStation", choices = c("End", stationData$name))
   })
   
+  # Update "Select Station" and "Station Name" when "New Station Name" changes
+  observeEvent(input$newStationName, {
+    newStation <- input$newStationName 
+    
+    # Update "Select Station" dropdown
+    updateSelectInput(session, "Station", choices = c(newStation, stationData$name), selected = newStation)
+    
+    # Update "Station Name" field in the editing section
+    updateTextInput(session, "stationName", value = newStation) 
+  })
   
   # Update input fields when "Select Station" is changed
   observeEvent(input$Station, {
     selectedStation <- input$Station
-    
-    # Update stationName textInput
-    updateTextInput(session, "stationName", value = ifelse(selectedStation == "Add a new station", "New Station", selectedStation))
     
     if (!is.null(selectedStation) && selectedStation %in% stationData$name) {
       stationIndex <- which(stationData$name == selectedStation)
@@ -140,7 +161,7 @@ server <- function(input, output, session) {
       # Reset input fields for a new station
       updateNumericInput(session, "Latitude", value = 0)
       updateNumericInput(session, "Longitude", value = 0)
-      updateTextInput(session, "Operations", value = "")
+      updateTextInput(session, "Operations", value = "stuff")
       updateNumericInput(session, "ShipSpeed", value = 10)
       updateNumericInput(session, "TimeOnStation", value = 24)
       
@@ -165,12 +186,16 @@ server <- function(input, output, session) {
       addAfterIndex <- ifelse(input$addAfterStation == "End", length(stationData$name) + 1, which(stationData$name == input$addAfterStation) + 1)
       
       # Insert new station data
-      stationData$name <- append(stationData$name, input$stationName, after = addAfterIndex - 1)
+      stationData$name <- append(stationData$name, input$newStationName, after = addAfterIndex - 1)
       stationData$lat <- append(stationData$lat, input$Latitude, after = addAfterIndex - 1)
       stationData$lon <- append(stationData$lon, input$Longitude, after = addAfterIndex - 1)
       stationData$Operations <- append(stationData$Operations, input$Operations, after = addAfterIndex - 1)
       stationData$speed <- append(stationData$speed, input$ShipSpeed, after = addAfterIndex - 1)
       stationData$time <- append(stationData$time, input$TimeOnStation, after = addAfterIndex - 1)
+      
+      # Automatically select the new station in the dropdown
+      updateSelectInput(session, "Station", selected = input$newStationName) 
+      
     }
   })
   
@@ -277,10 +302,10 @@ server <- function(input, output, session) {
   output$stationTable <- DT::renderDataTable({
         DT::datatable(tableData(),
                   options = list(
-                    pageLength = 15, # Number of rows per page
+                    pageLength = 30, # Number of rows per page
                     autoWidth = TRUE, # Automatically adjust the width
                     scrollX = TRUE,
-                    lengthMenu = c(15, 30, 50, 100), # Options for rows per page
+                    lengthMenu = c(30, 60, 100), # Options for rows per page
                     searching = TRUE, # Enable searching
                     ordering = TRUE,  # Enable sorting
                     columnDefs = list(
