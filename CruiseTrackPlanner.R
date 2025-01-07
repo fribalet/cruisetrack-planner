@@ -123,9 +123,20 @@ server <- function(input, output, session) {
       }
     }
     
-    updateSelectInput(session, "Station", choices = c(newStation, stationData$name))
+    # Ensure at least one choice in the dropdown
+    choices <- if (is.null(stationData$name)) {
+      c(newStation) 
+    } else {
+      c(newStation, stationData$name)
+    }
+    
+    # Update "Select Station" dropdown
+    updateSelectInput(session, "Station", choices = choices)
+    
+    # Update "New Station Name" field
     updateTextInput(session, "newStationName", value = newStation)
     updateSelectInput(session, "addAfterStation", choices = c("End", stationData$name))
+    
   })
   
   # Update "Select Station" and "Station Name" when "New Station Name" changes
@@ -151,6 +162,9 @@ server <- function(input, output, session) {
       updateNumericInput(session, "ShipSpeed", value = stationData$speed[stationIndex])
       updateNumericInput(session, "TimeOnStation", value = stationData$time[stationIndex])
       
+      # Automatically update the "Station Name" field
+      updateTextInput(session, "stationName", value = selectedStation) 
+      
       # Automatically select the previous station in "Add After Station"
       if (stationIndex > 1) {
         previousStation <- stationData$name[stationIndex - 1]
@@ -160,11 +174,12 @@ server <- function(input, output, session) {
       }
     } else {
       # Reset input fields for a new station
+      updateTextInput(session, "stationName", value = selectedStation) 
       updateNumericInput(session, "Latitude", value = 0)
       updateNumericInput(session, "Longitude", value = 0)
-      updateTextInput(session, "Operations", value = "stuff")
-      updateNumericInput(session, "ShipSpeed", value = 10)
-      updateNumericInput(session, "TimeOnStation", value = 24)
+      updateTextInput(session, "Operations", value = "")
+      updateNumericInput(session, "ShipSpeed", value = 12)
+      updateNumericInput(session, "TimeOnStation", value = 12)
       
       updateSelectInput(session, "addAfterStation", selected = "End") 
     }
