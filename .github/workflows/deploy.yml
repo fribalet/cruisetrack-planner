@@ -6,8 +6,8 @@ jobs:
   deploy-shiny:
     runs-on: macOS-latest
     env:
-      SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
-      SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}    
+      SHINYAPPS_TOKEN: ${{secrets.SHINYAPPS_TOKEN}}
+      SHINYAPPS_SECRET: ${{secrets.SHINYAPPS_SECRET}}    
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -23,7 +23,7 @@ jobs:
     - name: Deploy to Shinyapps.io
       run: |
         rsconnect::setAccountInfo(name = 'seaflow',
-                                  token = '${{ secrets.SHINYAPPS_TOKEN }}',
-                                  secret = '${{ secrets.SHINYAPPS_SECRET }}')
+                                  token = '${{secrets.SHINYAPPS_TOKEN}}',
+                                  secret = '${{secrets.SHINYAPPS_SECRET}}')
         rsconnect::deployApp(appName = 'cruisetrackplanner', account = 'seaflow', server = 'shinyapps.io', forceUpdate = TRUE)
       shell: Rscript {0}   
