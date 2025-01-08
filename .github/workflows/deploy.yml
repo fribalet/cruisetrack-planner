@@ -24,7 +24,6 @@ jobs:
 
     - name: Deploy to Shinyapps.io
       run: |
-        Rscript -e "rsconnect::setAccountInfo(name='seaflow', 
-                                      token='${{ secrets.SHINYAPPS_TOKEN }}', 
-                                      secret='${{ secrets.SHINYAPPS_SECRET }}')"
-        Rscript -e "rsconnect::deployApp(appName = 'cruisetrackplanner', account = 'seaflow')"
+        Rscript -e "rsconnect::deployApp(appName = 'cruisetrackplanner', account = 'seaflow', 
+                                     token = '${{ secrets.SHINYAPPS_TOKEN }}', 
+                                     secret = '${{ secrets.SHINYAPPS_SECRET }}')"
