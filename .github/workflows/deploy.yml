@@ -6,8 +6,7 @@ jobs:
   deploy-shiny:
     runs-on: macOS-latest
     env:
-      SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }} 
-      SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
+      GITHUB_PAT: ${{secrets.DEPLOY_SECRET}}    
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
