@@ -6,7 +6,7 @@ jobs:
   deploy-shiny:
     runs-on: ubuntu-latest
     env:
-      SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }} 
+      SHINYAPPS_TOKEN: ${{A33504145BE69558791A701B7385E178}} 
     steps:
       - uses: actions/checkout@v2
       - uses: r-lib/actions/setup-r@v2
@@ -14,7 +14,7 @@ jobs:
         run: install.packages('rsconnect')
       - name: Deploy to Shinyapps.io
         run: |
-          rsconnect::setAccountInfo(name='your_shinyapps_username',
+          rsconnect::setAccountInfo(name='seaflow',
                                    token='${{ secrets.SHINYAPPS_TOKEN }}',
-                                   secret='your_shinyapps_secret')
-          rsconnect::deployApp(appName = 'your_shiny_app_name')
+                                   secret='﻿﻿﻿2nZ22Y34g43gxF4THf4uNGMl1zhFIo4rsJT1dyWx')
+          rsconnect::deployApp(appName = 'cruisetrackplanner')
