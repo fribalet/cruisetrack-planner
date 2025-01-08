@@ -7,6 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }} 
+      SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -24,6 +25,4 @@ jobs:
 
     - name: Deploy to Shinyapps.io
       run: |
-        Rscript -e "rsconnect::deployApp(appName = 'cruisetrackplanner', account = 'seaflow', 
-                                     token = '${{ secrets.SHINYAPPS_TOKEN }}', 
-                                     secret = '${{ secrets.SHINYAPPS_SECRET }}')"
+        Rscript -e "rsconnect::deployApp(appName = 'cruisetrackplanner', account = 'seaflow')"
