@@ -2,6 +2,7 @@ library(shiny)
 library(leaflet)
 library(geosphere)
 library(DT)
+library(rsconnect)
 
 # Get the current time in the current timezone
 local_time <- as.POSIXlt(Sys.time(), tz = Sys.timezone())
