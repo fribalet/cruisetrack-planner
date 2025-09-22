@@ -1,14 +1,11 @@
 # Cruise Track Planner
 
-Tired of using an Excel file to plan your next cruise? We created a user-friendly interface for planning research expeditions, allowing scientists to add stations and visualize the track on a map, and manage the cruise schedule. 
-
-Click the link to launch the Shiny App:
-[Cruise Track Planner](http://seaflow.shinyapps.io/cruisetrackplanner)
-
+Tired of using an outdated Excel file to plan your next cruise? We created a user-friendly interface for planning research cruises, allowing scientists to organize the cruise track stations and add/edit stations and manage the cruise schedule. 
 
 ## Usage
 
-1. **Launch the App:** Type `Rscript CruiseTrackPlanner.R` or run script in R or RStudio to launch the Shiny app.
+1. **Launch the App:** Type `Rscript CruiseTrackPlanner.R` or Click the link to launch the Shiny App:
+[Cruise Track Planner](http://seaflow.shinyapps.io/cruisetrackplanner).
 2. **Upload Cruise Track (Optional):** 
     -   click `Browse` to select a CSV or TSV file containing station data.
     -   The file must contain the columns: `StationName`, `Latitude`, `Longitude`, `ShipSpeed`, `TimeOnStation`, and `Operations`.
@@ -34,7 +31,7 @@ Click the link to launch the Shiny App:
 
 ## Cruise Track Table Columns
 
-The table displayed in the app provides a comprehensive overview of the cruise track and includes the following columns:
+The table displayed in the app provides an overview of the cruise track and includes the following columns:
 
 *   **Station:** Name of the station.
 *   **Latitude:** Latitude of the station in decimal degrees North.
