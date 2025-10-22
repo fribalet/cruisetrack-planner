@@ -1,6 +1,10 @@
 # Cruise Track Planner
 
-This Shiny app provides a user-friendly interface for planning cruise tracks, allowing users to add stations, visualize the track on a map, and manage the cruise schedule.
+Tired of using an Excel file to plan your next cruise? We created a user-friendly interface for planning research expeditions, allowing scientists to add stations and visualize the track on a map, and manage the cruise schedule. 
+
+Click the link to launch the Shiny App:
+[Cruise Track Planner](http://seaflow.shinyapps.io/cruisetrackplanner)
+
 
 ## Usage
 
