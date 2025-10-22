@@ -53,5 +53,6 @@ The table displayed in the app provides a comprehensive overview of the cruise t
 
 - `shiny`
 - `leaflet`
+- `leaflem`
 - `geosphere`
 - `DT`

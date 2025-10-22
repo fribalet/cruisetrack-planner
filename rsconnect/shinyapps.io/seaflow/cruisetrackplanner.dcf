@@ -1,0 +1,10 @@
+name: cruisetrackplanner
+title:
+username: seaflow
+account: seaflow
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13671274
+bundleId: 11071264
+url: https://seaflow.shinyapps.io/cruisetrackplanner/
+version: 1
