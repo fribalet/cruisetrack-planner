@@ -409,4 +409,4 @@ server <- function(input, output, session) {
 shinyApp(ui = ui, server = server)
 
 # Deploy on shinnyapp.io server
-# rsconnect::deployApp()
+# rsconnect::deployApp(appName = 'cruisetrackplanner', server = 'shinyapps.io', forceUpdate = TRUE)
