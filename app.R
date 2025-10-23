@@ -1,5 +1,6 @@
 library(shiny)
 library(leaflet)
+library(leafem)
 library(geosphere)
 library(DT)
 
@@ -369,17 +370,27 @@ server <- function(input, output, session) {
   
   # Create the map
   output$map <- renderLeaflet({
-    leaflet() %>% addTiles() %>%
-      # Add markers and polylines if there are stations
-      {if (length(stationData$lat) > 0) addMarkers(.,
-                                                   lng = stationData$lon, 
-                                                   lat = stationData$lat, 
-                                                   popup = paste(
-                                                     "<strong>Station:</strong>", stationData$name, "<br>",
-                                                     "<strong>Operations:</strong>", stationData$Operations 
-                                                   )
-      )} %>%
-      {if (length(stationData$lat) > 1) addPolylines(., lng = stationData$lon, lat = stationData$lat)}
+    map <- leaflet() %>% addTiles()
+    
+    # Add markers if there are stations
+    if (length(stationData$lat) > 0) {
+      map <- map %>% 
+        addMarkers(lng = stationData$lon, 
+                   lat = stationData$lat, 
+                   popup = paste(
+                     "<strong>Station:</strong>", stationData$name, "<br>",
+                     "<strong>Operations:</strong>", stationData$Operations 
+                   ))
+    }
+    
+    # Add polylines if there are multiple stations
+    if (length(stationData$lat) > 1) {
+      map <- map %>% 
+        addPolylines(lng = stationData$lon, lat = stationData$lat)
+    }
+    
+    # Add mouse coordinates
+    map %>% addMouseCoordinates()
   })
   
   # Download the table
@@ -396,3 +407,6 @@ server <- function(input, output, session) {
 
 # Run the application
 shinyApp(ui = ui, server = server)
+
+# Deploy on shinnyapp.io server
+# rsconnect::deployApp(appName = 'cruisetrackplanner', server = 'shinyapps.io', forceUpdate = TRUE)

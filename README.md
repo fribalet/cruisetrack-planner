@@ -50,5 +50,6 @@ The table displayed in the app provides an overview of the cruise track and incl
 
 - `shiny`
 - `leaflet`
+- `leaflem`
 - `geosphere`
 - `DT`
